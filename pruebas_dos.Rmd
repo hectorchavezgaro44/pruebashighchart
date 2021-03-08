@@ -1,0 +1,119 @@
+---
+title: "pokemon"
+output: html_document
+---
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = F, 
+message = F,
+warning = F, 
+fig.asp = 0.8, 
+fig.width = 7, 
+out.width = "100%",
+dpi = 300,
+collapse = TRUE,
+comment = "#>"
+) 
+```
+
+```{r setup}
+library(dplyr)
+library(tidyr)
+library(highcharter)
+library(quanteda)
+library(ggthemes)
+library(ggfittext)
+library(plotly)
+library(RColorBrewer)
+```
+
+
+
+```{r setup}
+
+library(readr)
+
+url_base <- "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv"
+
+pkmnes <- read_csv(file.path(url_base, "pokemon.csv"))
+
+
+
+
+pkmn_nombre_tipos <- read_csv(file.path(url_base, "type_names.csv")) %>% 
+  # inglés es 9, Japonez es 1, español 7
+  filter(local_language_id == 9)
+
+pkmn_tipo <- read_csv(file.path(url_base, "pokemon_types.csv"))
+pkmn_tipo <- pkmn_tipo %>% 
+  mutate(slot = paste0("type_", slot)) %>% 
+  left_join(pkmn_nombre_tipos, by = "type_id") %>% 
+  select(pokemon_id, slot, name) %>% 
+  spread(slot, name)
+
+
+
+pkmn_colores_tipo <- pkmn_nombre_tipos %>% 
+  pull(name) %>% 
+  setdiff(c("???", "Shadow")) %>% 
+  purrr::map_df(function(t){
+  # t <- "psychic"
+  message(t)
+  
+  col <- "http://pokemon-uranium.wikia.com/wiki/Template:%s_color" %>% 
+    sprintf(t) %>%
+    xml2::read_html() %>% 
+    rvest::html_nodes("span > b") %>% 
+    rvest::html_text()
+  
+  tibble(type = t, color = paste0("#", col))
+})
+
+pkmn_colores_tipo2 <- crossing(
+  color_1 = pkmn_colores_tipo$color,
+  color_2 = pkmn_colores_tipo$color
+  ) %>% 
+  mutate(
+    color_f = purrr::map2_chr(
+      color_1,
+      color_2,
+      ~ colorRampPalette(c(.x, .y))(100)[round(100 * .25)])
+    )
+
+
+
+
+pkmn <- pkmnes %>% 
+  left_join(pkmn_tipo, by = c("id" = "pokemon_id")) %>% 
+  left_join(pkmn_colores_tipo %>% rename(type_1 = type, color_1 = color), by = "type_1") %>% 
+  left_join(pkmn_colores_tipo %>% rename(type_2 = type, color_2 = color), by = "type_2") %>% 
+  left_join(pkmn_colores_tipo2, by =  c("color_1", "color_2")) %>% 
+  mutate(color_f = ifelse(is.na(color_f), color_1, color_f))
+
+
+dprinc <- pkmn %>% 
+  select(name = type_1, color = color_1) %>% 
+  distinct() %>% 
+  mutate(id = str_to_id(name))
+
+
+dsecun <- pkmn %>% 
+  count(type_1, type_2, color_f) %>% 
+  # los siguiente nombre de columnas son para que highcharts los use 
+  # internamente.
+  transmute(
+    name =  ifelse(is.na(type_2), paste("only", type_1), type_2),
+    parent = str_to_id(type_1),
+    color = color_f,
+    value = n
+    ) %>% 
+  mutate(id = as.character(row_number()))
+
+dd <- list(dprinc, dsecun) %>%
+  purrr::map(mutate_if, is.factor, as.character) %>% 
+  bind_rows()
+
+
+
+```
+
+

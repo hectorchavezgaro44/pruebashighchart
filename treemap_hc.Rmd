@@ -44,7 +44,6 @@ n <- 1000
 ```
 
 ```{r}
-library(rlist)
 base1 <- BD %>% 
          select(mencionGenerada) %>% 
          unique() %>% 
@@ -105,68 +104,90 @@ highchart() %>%
 
 
 ```{r}
-library(readr)
-url_base <- "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv"
-pkmnes <- read_csv(file.path(url_base, "pokemon.csv"))
-pkmnes
-pkmn_nombre_tipos <- read_csv(file.path(url_base, "type_names.csv")) %>% 
-  # inglés es 9, Japonez es 1, español 7
-  filter(local_language_id == 9)
-pkmn_tipo <- read_csv(file.path(url_base, "pokemon_types.csv"))
-pkmn_tipo <- pkmn_tipo %>% 
-  mutate(slot = paste0("type_", slot)) %>% 
-  left_join(pkmn_nombre_tipos, by = "type_id") %>% 
-  select(pokemon_id, slot, name) %>% 
-  spread(slot, name)
-pkmn_colores_tipo <- pkmn_nombre_tipos %>% 
-  pull(name) %>% 
-  setdiff(c("???", "Shadow")) %>% 
-  purrr::map_df(function(t){
-  # t <- "psychic"
-  message(t)
+  base1 <- BD %>% 
+    # filter(candidato %in% candida)%>%
+    select(percepcion) %>% 
+    unique() %>% 
+    mutate(color=if_else(percepcion=="Buena",
+                         "#FFFFFF",                     
+                         if_else(percepcion=="Mala",
+                                 "#FFFFFF","#FFFFFF")),
+           id=str_to_id(percepcion)) %>% 
+    rename("name"="percepcion")
+  base2 <- BD %>% 
+    # filter(candidato %in% candida)%>%
+    count(percepcion, mencionGenerada) %>% 
+    mutate(color=if_else(percepcion=="Buena" & 
+                  mencionGenerada=="Boletines\n de prensa","#006d2c",
+                  if_else(percepcion=="Buena" & 
+                  mencionGenerada=="declaraciones",
+                  "#31a354",
+                  if_else(percepcion=="Buena" & 
+                  mencionGenerada=="filtraciones",
+                  "#74c476",
+                  if_else(percepcion=="Mala" & 
+                  mencionGenerada=="Boletines\n de prensa",
+                  "#a50f15",
+                  if_else(percepcion=="Mala" & 
+                  mencionGenerada=="declaraciones",
+                  "#de2d26",
+                  if_else(percepcion=="Mala" & 
+                  mencionGenerada=="filtraciones",
+                  "#fb6a4a", 
+                  if_else(percepcion=="Regular" & 
+                  mencionGenerada=="Boletines\n de prensa",
+                  "#636363",
+                  if_else(percepcion=="Regular" & 
+                  mencionGenerada=="declaraciones",
+                  "#969696","#cccccc")))))))),
+           parent=str_to_id(percepcion),
+           id = as.character(row_number())) %>% 
+    select(-percepcion) %>% 
+    rename("name"= "mencionGenerada", "value"="n")
+  dde <- list(base1, base2) %>%
+    purrr::map(mutate_if, is.factor, as.character) %>% 
+    bind_rows() %>% 
+    list_parse() %>% 
+    purrr::map(function(x) x[!is.na(x)])
   
-  col <- "http://pokemon-uranium.wikia.com/wiki/Template:%s_color" %>% 
-    sprintf(t) %>%
-    xml2::read_html() %>% 
-    rvest::html_nodes("span > b") %>% 
-    rvest::html_text()
-  
-  tibble(type = t, color = paste0("#", col))
-})
-pkmn_colores_tipo2 <- crossing(
-  color_1 = pkmn_colores_tipo$color,
-  color_2 = pkmn_colores_tipo$color
-  ) %>% 
-  mutate(
-    color_f = purrr::map2_chr(
-      color_1,
-      color_2,
-      ~ colorRampPalette(c(.x, .y))(100)[round(100 * .25)])
-    )
-pkmn <- pkmnes %>% 
-  left_join(pkmn_tipo, by = c("id" = "pokemon_id")) %>% 
-  left_join(pkmn_colores_tipo %>% rename(type_1 = type, color_1 = color), by = "type_1") %>% 
-  left_join(pkmn_colores_tipo %>% rename(type_2 = type, color_2 = color), by = "type_2") %>% 
-  left_join(pkmn_colores_tipo2, by =  c("color_1", "color_2")) %>% 
-  mutate(color_f = ifelse(is.na(color_f), color_1, color_f))
-dprinc <- pkmn %>% 
-  select(name = type_1, color = color_1) %>% 
-  distinct() %>% 
-  mutate(id = str_to_id(name))
-dsecun <- pkmn %>% 
-  count(type_1, type_2, color_f) %>% 
-  # los siguiente nombre de columnas son para que highcharts los use 
-  # internamente.
-  transmute(
-    name =  ifelse(is.na(type_2), paste("only", type_1), type_2),
-    parent = str_to_id(type_1),
-    color = color_f,
-    value = n
+highchart() %>% 
+    hc_chart(type = "treemap") %>% 
+    hc_title(
+      text = paste0("Calificación de menciones ")
+    ) %>%
+    hc_add_series(
+      data = dde,
+      allowDrillToNode = TRUE,
+      levelIsConstant = TRUE,
+      textOverflow = "clip",
+      dataLabels = list(color = "white"),
+      levels = list(
+        list(
+          level = 1,
+          borderWidth = 8,
+          dataLabels = list(
+            enabled = TRUE,
+            verticalAlign = "top",
+            align = "left",
+            style = list(fontSize = "12px", textOutline = FALSE)
+          )
+        ),
+        list(
+          level = 2,
+          borderWidth = 0,
+          dataLabels = list(
+            enabled = TRUE, 
+             verticalAlign = "bottom",
+            align = "left",
+            style = list(fontSize = "12px", textOutline = FALSE)
+
+                            )
+        )
+      )
     ) %>% 
-  mutate(id = as.character(row_number()))
-dd <- list(dprinc, dsecun) %>%
-  purrr::map(mutate_if, is.factor, as.character) %>% 
-  bind_rows() %>% 
-  list_parse() %>% 
-  purrr::map(function(x) x[!is.na(x)])
+    # esto es para que el primer nivel, que no tiene color asigando, 
+    # sea transparente.
+    hc_colors("trasnparent")
+
+
 ```
