@@ -187,7 +187,11 @@ highchart() %>%
     ) %>% 
     # esto es para que el primer nivel, que no tiene color asigando, 
     # sea transparente.
-    hc_colors("trasnparent")
+    hc_colors("trasnparent")%>% 
+  
+    hc_chart(style = list(fontFamily = "Avenir next"
+    ))
+  
 
 
 ```
