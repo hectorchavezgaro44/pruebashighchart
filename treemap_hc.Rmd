@@ -195,3 +195,116 @@ highchart() %>%
 
 
 ```
+
+```{r}
+    n <- 1000
+    v <- rep("Este es un texto a ser noticia", n)
+    x <- c("12/01/2020", "13/01/2020","14/01/2020", "15/01/2020", "16/01/2020", "17/01/2020",
+           "12/02/2020", "13/02/2020","14/02/2020", "15/02/2020", "16/02/2020", "17/02/2020",
+           "12/01/2021", "13/01/2021","14/01/2021", "15/01/2021", "16/01/2021", "17/01/2021",
+           "12/02/2021", "13/02/2021","14/02/2021", "15/02/2021", "16/02/2021", "17/02/2021")
+    X <- sample(c("Buena", "Mala", "Regular"), n, replace=T) 
+    filePath <- "http://www.sthda.com/sthda/RDoc/example-files/martin-luther-king-i-have-a-dream-speech.txt"
+    text <- readLines(filePath) 
+    remove <- c("", " ")
+    text <- setdiff(text, remove)
+    
+    BD <- tibble(
+    id = 1:n, title = v, calificacion = X,
+    fecha = as.Date(rep(x, len = n)),
+    text = rep(text, len = n),               
+    temas = sample(c("Deportes", "Cultura", "Sociedad", "Tecnología", "Otros"), n, replace=T),
+    entidad = sample(c("Michoacán", "Nuevo León"), 
+                     n, replace = T, 
+                     prob = c(.5, .5))
+    ) %>% 
+    mutate(temasOtro = case_when(temas == "Otros" ~ "Otro tema"), Noticias = 1)
+    BD <- filter(BD, entidad==!!entidad())
+
+
+
+temas_eleccion <- function(bd, pregunta, otro, x, titulo =""){
+  bd_2 <- bd %>% filter({{ pregunta }} %in% c('Otro'))
+  
+  bd_1 = count(bd, {{ pregunta }}) %>%
+    mutate(n  = round(100*n/sum(n),2)) %>%
+    arrange(-n)
+  
+  nTot <- bd_1 %>%
+    select(n) %>%
+    mutate(sum = sum(n)) %>%
+    select(sum)
+  
+  nTot <- nTot[1,1]$sum
+  
+  bd_1 <- bd_1 %>%
+    filter(!{{ pregunta }} %in% c('Otro'))
+  
+  bd_1 <- bd_1 %>% mutate(n  = round(n/100, 2)) %>%
+    spread(value = n, key = {{ pregunta }})
+  
+  bd_2 <- count(bd_2, {{ otro }}) %>%
+    mutate(porcentaje  = round(100*n/sum(n), 2)) %>%
+    filter(porcentaje > x)
+  
+  bd_2 <- select(bd_2, -porcentaje) 
+  
+  bd_2 <- bd_2 %>% mutate(n = round(n/nTot,2)) %>%
+    spread(value = n, key = {{ otro }})
+  
+  if(nrow(bd_1) != nrow(bd_2)){
+    
+    Graph <- bd_1 %>%  gather(x, y) %>% mutate(y = round(y *100)) %>% 
+      hchart(hcaes(x = x, y  =y), type = "line") %>%  
+      hc_title(text =paste("<b>", titulo,"<b>") , align = "left", style = list(fontSize = "22px", color = "#13384D")) %>% 
+      hc_plotOptions(line = list(lineWidth = 7, marker = list(radius = 7))) %>% 
+      hc_yAxis(lineWidth =0, title = list(enabled = F),
+               tickAmount = 4, showLastLabel = T,
+               gridLineWidth  =1,
+               gridLineDashStyle = "longdash",
+               lineDashStyle = "longdash",
+               labels = list(enabled = F,  format=paste0("{value}%"))) %>% 
+      hc_xAxis(title = list(enabled = F), 
+               lineWidth = 1,
+               gridLineWidth =0,
+               labels = list(style = list(
+        fontFamily = "Avenir Next",
+        # color = "#0c5776",
+        fontSize = "16px"))) %>% 
+      hc_colors("#4F5F80") %>% 
+      hc_tooltip(headerFormat = "",
+                 pointFormat= '<b>{point.y}%</b>',
+                 borderWidth= 0, shape = "square", shadow=F) %>% 
+            hc_chart(polar = T, style = list(fontFamily = "Avenir Next"))
+  }else{
+    
+    df <- data.frame(bd_1, bd_2)
+    titulos <- df %>%  colnames() %>%  str_to_sentence()
+    df <- df %>%  set_names(titulos)
+    Graph <-  df %>% gather(x, y) %>% mutate(y = round(y *100)) %>% 
+      hchart(hcaes(x = x, y  =y), type = "line") %>%  
+      hc_chart(polar = T, style = list(fontFamily = "Avenir Next")) %>% 
+      hc_title(text = titulo,
+           align = "left", style = list(fontSize = "22px", color = "#13384D")) %>% 
+      hc_plotOptions(line = list(lineWidth = 5, marker = list(radius = 7))) %>% 
+      hc_yAxis(lineWidth =0, title = list(enabled = F),
+               # tickAmount = 3, 
+               showLastLabel = T,
+               gridLineDashStyle = "longdash",
+               lineDashStyle = "longdash",
+               labels = list(  format=paste0("{value}%"))) %>% 
+      hc_xAxis(title = list(enabled = F), labels = list(style = list(color = "#0c5776", fontFamily  = "Avenir Next", fontSize = "18px"))) %>% 
+      hc_colors("#81cbfe")%>% 
+      hc_tooltip(headerFormat = "",
+                 pointFormat= '<b>{point.y}%</b>',
+                 borderWidth= 0, shape = "square", shadow=F)
+    
+  }
+  
+  return(Graph)
+}
+
+
+
+```
+
