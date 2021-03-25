@@ -25,6 +25,7 @@ library(ggthemes)
 library(ggfittext)
 library(plotly)
 library(RColorBrewer)
+library(sf)
 ```
 
 ```{r}
@@ -307,4 +308,23 @@ temas_eleccion <- function(bd, pregunta, otro, x, titulo =""){
 
 
 ```
+
+```{r}
+secc <- st_read("~/Dropbox (Selva)/Ciencia de datos/Consultoría Estadística/Recursos/Externos/INE/SHP/2017/20 - Oaxaca/SECCION.shp", stringsAsFactors = FALSE, quiet = TRUE) %>%
+  st_transform(4326) 
+
+
+mun <- st_read("~/Dropbox (Selva)/Ciencia de datos/Consultoría Estadística/Recursos/Externos/INE/SHP/2017/20 - Oaxaca/MUNICIPIO.shp", stringsAsFactors = FALSE, quiet = TRUE) %>%
+  st_transform(4326) 
+
+
+hua_mun <- filter(mun, MUNICIPIO=="414")
+secc <- filter(secc, MUNICIPIO=="414")
+
+
+plot(hua_mun)
+plot(secc)
+
+```
+
 
