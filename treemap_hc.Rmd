@@ -24,11 +24,15 @@ library(quanteda)
 library(ggthemes)
 library(ggfittext)
 library(plotly)
+library(here)
 library(RColorBrewer)
 library(sf)
 ```
 
 ```{r}
+chih <- readr::read_csv("~/Dropbox (Selva)/Ciencia de datos/Consultoría Estadística/Recursos/Externos/INE/Bases de datos/2018/Locales/Presidente Municipal/chihuahua_municipal_2018_casilla.csv")
+
+readr::write_csv(chih, here("datos", "chih_ayun.csv"))
 
 n <- 1000
     BD <- tibble(
