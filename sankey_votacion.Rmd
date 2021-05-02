@@ -1,0 +1,89 @@
+---
+title: "sankey_votacion"
+output: html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = F, 
+message = F,
+warning = F, 
+fig.asp = 0.8, 
+fig.width = 7, 
+out.width = "100%",
+dpi = 300,
+collapse = TRUE,
+comment = "#>"
+) 
+```
+
+```{r setup}
+library(pacman)
+p_load(tidyverse, highcharter, here)
+
+
+```
+
+
+```{r}
+proyectos <- read_csv(here("datos", "proyecto_leys.csv"))
+
+votacion <- read_csv(here("datos", "votacions.csv"))
+
+iniciativas <- read_csv(here("datos", "iniciativas.csv")) %>% 
+               select(id, nombre)
+
+
+```
+
+
+```{r}
+
+proy <- proyectos %>% 
+       select(id, cuatrienio_id, corporacion_id, iniciativa_id, corporacion_id) %>% 
+       left_join(iniciativas, by=c("iniciativa_id"="id")) %>% 
+       select(id, nombre, corporacion_id)
+
+
+vot <- votacion %>% 
+       select(proyecto_de_ley_id,fecha, esPlenaria, votosFavor, votosContra) %>% 
+       filter(esPlenaria==1) %>% 
+       group_by(proyecto_de_ley_id) %>% 
+       filter(fecha==max(fecha)) %>% 
+       ungroup()
+
+proy_vot_todos <- inner_join(vot, proy, by=c("proyecto_de_ley_id"="id")) %>% 
+            select(nombre, votosFavor, votosContra, corporacion_id)
+
+
+
+####En el senado-----
+
+proy_vot <- filter(proy_vot_todos, corporacion_id==1)
+proy_vot <- gather(proy_vot, votos, total, votosFavor:votosContra) %>% 
+            group_by(nombre, votos) %>% 
+            summarise(total=sum(total, na.rm = T)) %>% 
+            ungroup()
+
+proy_vot %>%   hchart(hcaes(from = nombre, to  = votos, weight =total), type = "sankey") %>%
+  hc_title(text = "Sentido del voto según origen de iniciativa en la actual legislatura del Senado") 
+
+
+```
+
+
+
+
+```{r}
+### En la cámara
+proy_vot <- filter(proy_vot_todos, corporacion_id==2)
+proy_vot <- gather(proy_vot, votos, total, votosFavor:votosContra) %>% 
+            group_by(nombre, votos) %>% 
+            summarise(total=sum(total, na.rm = T)) %>% 
+            ungroup()
+
+proy_vot %>%   hchart(hcaes(from = nombre, to  = votos, weight =total), type = "sankey") %>%
+  hc_title(text = "Sentido del voto según origen de iniciativa en la actual legislatura en la Cámara") 
+
+
+
+```
