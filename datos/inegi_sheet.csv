@@ -1,7 +1,7 @@
 ﻿variable,descripcion,grupo,weight
 PHOG_IND,Población en hogares censales indígenas,Integrantes del hogar,pobtot
 PCON_DISC,Personas con discapacidad,Integrantes del hogar,pobtot
-P15PRI_IN,Población con primaria incompleta,Económico,p_15ymas
+P15PRI_IN,Personas con primaria incompleta,Económico,p_15ymas
 P15YM_SE,Personas de 15 a 130 años de edad que no aprobaron ningún grado de escolaridad,Económico,p_15ymas
 PDESOCUP,Personas que no tenían trabajo,Económico,P_12YMAS
 PSINDER,Personas sin derechohabiencia a servicios de salud,Integrantes del hogar,pobtot
