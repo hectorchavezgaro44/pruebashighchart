@@ -1,0 +1,68 @@
+---
+title: "tablas"
+output: html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = F, 
+message = F,
+warning = F, 
+fig.asp = 0.8, 
+fig.width = 7, 
+out.width = "100%",
+dpi = 300,
+collapse = TRUE,
+comment = "#>"
+) 
+```
+
+
+
+```{r setup}
+library(pacman)
+p_load(tidyverse, devtools, here, janitor, sf, gt)
+devtools::install_github("hectorchavezgaro44/electoral")
+library(electoral)
+load(here("datos", "secciones_valle_final.rda"))
+
+```
+
+
+```{r}
+inegi_sheet <- read_csv(here("datos", "inegi_sheet.csv")) %>% 
+               mutate(variable=stringr::str_to_lower(variable), 
+                        weight=stringr::str_to_lower(weight)) %>% 
+               rename("Variable"="variable", "Indicador"="descripcion")
+
+
+bd <- preparar_info_censo(final, 
+                          unidad_analisis="seccion", 
+                          id_unidad_analisis=5656, 
+                          variable="pdesocup", 
+                          weight="p_12ymas")
+
+bd2 <- preparar_info_censo(final, 
+                          unidad_analisis="seccion", 
+                          id_unidad_analisis=5656, 
+                          variable="p15pri_in", 
+                          weight="p_15ymas")
+
+bd3 <- preparar_info_censo(final, 
+                          unidad_analisis="seccion", 
+                          id_unidad_analisis=5656, 
+                          variable="p15ym_se", 
+                          weight="p_15ymas")
+
+
+
+
+
+
+inegi_traduccion <- select(inegi_sheet, Variable, Indicador, grupo)
+
+
+
+graficando_tabla(bd=bd, bd2=bd2, bd3=bd3, unidad_analisis="seccion")
+```
+
+
