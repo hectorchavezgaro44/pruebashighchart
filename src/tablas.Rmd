@@ -57,11 +57,6 @@ bd3 <- preparar_info_censo(final,
 
 
 
-
-inegi_traduccion <- select(inegi_sheet, Variable, Indicador, grupo)
-
-
-
 graficando_tabla(bd=bd, bd2=bd2, bd3=bd3, unidad_analisis="seccion")
 ```
 
