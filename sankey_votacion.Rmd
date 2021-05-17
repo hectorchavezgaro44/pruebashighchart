@@ -82,8 +82,12 @@ proy_vot <- gather(proy_vot, votos, total, votosFavor:votosContra) %>%
             ungroup()
 
 proy_vot %>%   hchart(hcaes(from = nombre, to  = votos, weight =total), type = "sankey") %>%
-  hc_title(text = "Sentido del voto según origen de iniciativa en la actual legislatura en la Cámara") 
+  hc_title(text = "Sentido del voto según origen de iniciativa en la actual legislatura en la Cámara") %>%
+  hc_title(text = "Sentido del voto según origen de iniciativa en la actual legislatura del Senado") 
 
 
 
 ```
+
+
+
